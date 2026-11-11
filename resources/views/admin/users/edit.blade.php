@@ -23,7 +23,20 @@
 
                     {{-- NAMA --}}
                     <div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="internship_start" class="mb-2 block text-sm font-medium text-gray-700">Mulai magang</label>
+                            <input id="internship_start" type="date" name="internship_start" value="{{ old('internship_start', $user->internship_start?->format('Y-m-d')) }}" class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('internship_start')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="internship_end" class="mb-2 block text-sm font-medium text-gray-700">Selesai magang</label>
+                            <input id="internship_end" type="date" name="internship_end" value="{{ old('internship_end', $user->internship_end?->format('Y-m-d')) }}" class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('internship_end')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                         <label class="block text-sm font-medium text-gray-700 mb-2">
+                        </div>
+                    </div>
                             Nama Lengkap
                         </label>
 
@@ -131,6 +144,19 @@
                         @error('guru_id')
                             <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="internship_start" class="mb-2 block text-sm font-medium text-gray-700">Mulai magang</label>
+                            <input id="internship_start" type="date" name="internship_start" value="{{ old('internship_start', $user->internship_start?->format('Y-m-d')) }}" class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('internship_start')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="internship_end" class="mb-2 block text-sm font-medium text-gray-700">Selesai magang</label>
+                            <input id="internship_end" type="date" name="internship_end" value="{{ old('internship_end', $user->internship_end?->format('Y-m-d')) }}" class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('internship_end')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                        </div>
                     </div>
 
                     {{-- TOMBOL --}}

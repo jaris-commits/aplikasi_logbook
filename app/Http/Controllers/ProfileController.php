@@ -26,13 +26,20 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $data = $request->validated();
+        $user = $request->user();
+        $user->fill(collect($data)->except(['telegram_chat_id', 'telegram_consent'])->all());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->telegram_chat_id = $data['telegram_chat_id'] ?? null;
+        $user->telegram_consent_at = ! empty($data['telegram_consent']) && $user->telegram_chat_id
+            ? ($user->telegram_consent_at ?? now())
+            : null;
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

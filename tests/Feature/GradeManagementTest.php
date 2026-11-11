@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class GradeManagementTest extends TestCase
@@ -12,6 +13,7 @@ class GradeManagementTest extends TestCase
 
     public function test_admin_can_create_grade_for_student(): void
     {
+        Notification::fake();
         $admin = User::factory()->create([
             'role' => 'admin',
         ]);
@@ -36,6 +38,8 @@ class GradeManagementTest extends TestCase
             'semester' => '2026/2027 Ganjil',
             'catatan' => 'Sangat baik dalam kerja sama tim.',
         ]);
+
+        Notification::assertSentTo($student, \App\Notifications\LogbookWorkflowNotification::class);
     }
 
     public function test_teacher_can_only_create_grade_for_assigned_student(): void

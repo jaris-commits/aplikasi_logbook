@@ -67,5 +67,15 @@
             @endforelse
         </tbody>
     </table>
+
+    @if($signatureSvg)
+        <div style="margin-top: 40px; width: 250px; margin-left: auto; text-align: center;">
+            <p>Tanda tangan visual</p>
+            {!! $signatureSvg !!}
+            <p><strong>{{ $signature->user->name }}</strong><br>{{ $signature->signed_at->format('d/m/Y H:i') }}</p>
+            <p style="font-size: 8px; word-break: break-all;">Hash data: {{ $signature->document_hash }}</p>
+            <p style="font-size: 8px;">Gambar tanda tangan untuk keperluan internal, bukan tanda tangan elektronik tersertifikasi.</p>
+        </div>
+    @endif
 </body>
 </html>

@@ -44,6 +44,18 @@
 
                     </div>
 
+                    @if(auth()->user()->projects()->exists())
+                        <div class="mb-4">
+                            <label for="project_id" class="mb-2 block font-medium">Proyek terkait (opsional)</label>
+                            <select id="project_id" name="project_id" class="w-full rounded-md border-gray-300">
+                                <option value="">Aktivitas individu / tidak terkait proyek</option>
+                                @foreach(auth()->user()->projects()->orderBy('name')->get() as $project)
+                                    <option value="{{ $project->id }}" @selected(old('project_id', $logbook->project_id) == $project->id)>{{ $project->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
                     <div class="mb-4">
 
                         <label class="block font-medium mb-2">

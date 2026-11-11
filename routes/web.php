@@ -3,7 +3,10 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\LogbookController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WeeklyLogbookSummaryController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +27,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // DASHBOARD
     Route::get('/dashboard', [LogbookController::class, 'index'])
         ->name('dashboard');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+
+    Route::get('/attendance', [AttendanceController::class, 'index'])
+        ->middleware('role:admin,guru,siswa')->name('attendance.index');
+    Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])
+        ->middleware('role:siswa')->name('attendance.check-in');
+    Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut'])
+        ->middleware('role:siswa')->name('attendance.check-out');
+    Route::get('/attendance/{attendance}/photo', [AttendanceController::class, 'photo'])
+        ->middleware('role:admin,guru,siswa')->name('attendance.photo');
+
+    Route::get('/projects', [ProjectController::class, 'index'])
+        ->middleware('role:admin,guru')->name('projects.index');
+    Route::post('/projects', [ProjectController::class, 'store'])
+        ->middleware('role:admin,guru')->name('projects.store');
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])
+        ->middleware('role:admin,guru')->name('projects.destroy');
 
     // PROFILE
     Route::get('/profile', [ProfileController::class, 'edit'])
@@ -96,5 +119,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/report/grade-pdf', [ReportController::class, 'gradePdf'])
             ->name('report.grade.pdf');
+        Route::post('/report/signature', [ReportController::class, 'saveSignature'])
+            ->name('report.signature');
     });
 });

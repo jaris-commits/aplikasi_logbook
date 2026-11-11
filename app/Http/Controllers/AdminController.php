@@ -52,6 +52,8 @@ class AdminController extends Controller
                 Rule::exists('users', 'id')
                     ->where(fn ($query) => $query->where('role', 'guru')),
             ],
+                    'internship_start' => ['nullable', 'date'],
+                    'internship_end' => ['nullable', 'date', 'after_or_equal:internship_start'],
         ]);
 
         $user = new User();
@@ -64,6 +66,8 @@ class AdminController extends Controller
         $user->guru_id = $data['role'] === 'siswa'
             ? $data['guru_id']
             : null;
+        $user->internship_start = $data['role'] === 'siswa' ? ($data['internship_start'] ?? null) : null;
+        $user->internship_end = $data['role'] === 'siswa' ? ($data['internship_end'] ?? null) : null;
 
         $user->save();
 
@@ -104,6 +108,8 @@ class AdminController extends Controller
                 Rule::exists('users', 'id')
                     ->where(fn ($query) => $query->where('role', 'guru')),
             ],
+                    'internship_start' => ['nullable', 'date'],
+                    'internship_end' => ['nullable', 'date', 'after_or_equal:internship_start'],
         ]);
 
         // Admin tidak boleh mengubah rolenya sendiri
@@ -130,6 +136,8 @@ class AdminController extends Controller
         $user->guru_id = $data['role'] === 'siswa'
             ? $data['guru_id']
             : null;
+        $user->internship_start = $data['role'] === 'siswa' ? ($data['internship_start'] ?? null) : null;
+        $user->internship_end = $data['role'] === 'siswa' ? ($data['internship_end'] ?? null) : null;
 
         $user->save();
 

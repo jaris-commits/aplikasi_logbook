@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Grade;
 use App\Models\Logbook;
+use App\Models\Attendance;
+use App\Services\WorkflowNotifier;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +21,7 @@ class LogbookController extends Controller
         if ($user->role === 'siswa') {
 
             // Siswa hanya melihat logbook miliknya sendiri
-            $logbooks = Logbook::with('user')
+            $logbooks = Logbook::with(['user', 'project'])
                 ->where('user_id', $user->id)
                 ->orderBy('tanggal', 'desc')
                 ->get();
@@ -26,7 +29,7 @@ class LogbookController extends Controller
         } elseif ($user->role === 'guru') {
 
             // Guru hanya melihat logbook siswa bimbingannya
-            $logbooks = Logbook::with('user')
+            $logbooks = Logbook::with(['user', 'project'])
                 ->whereHas('user', function ($query) use ($user) {
                     $query->where('guru_id', $user->id)
                         ->where('role', 'siswa');
@@ -37,7 +40,7 @@ class LogbookController extends Controller
         } elseif ($user->role === 'admin') {
 
             // Admin dapat melihat seluruh logbook
-            $logbooks = Logbook::with('user')
+            $logbooks = Logbook::with(['user', 'project'])
                 ->orderBy('tanggal', 'desc')
                 ->get();
 
@@ -62,18 +65,63 @@ class LogbookController extends Controller
         $students = $user->role === 'admin'
             ? \App\Models\User::where('role', 'siswa')->orderBy('name')->get()
             : ($user->role === 'guru' ? $user->siswaBimbingan()->orderBy('name')->get() : collect());
+        $projects = $user->role === 'siswa' ? $user->projects()->orderBy('name')->get() : collect();
 
-        return view('dashboard', compact('logbooks', 'grades', 'students'));
+        $today = CarbonImmutable::today();
+        $monthLogbooks = $logbooks->filter(fn (Logbook $logbook) =>
+            CarbonImmutable::parse($logbook->tanggal)->isSameMonth($today)
+        );
+        $weeklyActivity = collect(range(6, 0))->map(function (int $daysAgo) use ($logbooks, $today) {
+            $date = $today->subDays($daysAgo);
+
+            return [
+                'label' => $date->translatedFormat('D'),
+                'date' => $date->format('d/m'),
+                'count' => $logbooks->filter(fn (Logbook $logbook) =>
+                    CarbonImmutable::parse($logbook->tanggal)->isSameDay($date)
+                )->count(),
+            ];
+        });
+        $peakDailyActivity = max(1, (int) $weeklyActivity->max('count'));
+        $internshipProgress = $user->role === 'siswa' ? $user->internshipProgress() : null;
+        $todayAttendance = $user->role === 'siswa'
+            ? $user->attendances()->whereDate('tanggal', today())->first()
+            : null;
+        $unreadNotifications = $user->unreadNotifications()->latest()->limit(5)->get();
+        $unreadNotificationCount = $user->unreadNotifications()->count();
+
+        $statistics = [
+            'month_total' => $monthLogbooks->count(),
+            'month_approved' => $monthLogbooks->where('status', 'disetujui')->count(),
+            'month_revision' => $monthLogbooks->where('status', 'revisi')->count(),
+            'month_pending' => $monthLogbooks->where('status', 'pending')->count(),
+            'week_total' => $weeklyActivity->sum('count'),
+        ];
+
+        return view('dashboard', compact(
+            'logbooks', 'grades', 'students', 'statistics', 'weeklyActivity',
+            'peakDailyActivity', 'internshipProgress', 'todayAttendance',
+            'unreadNotifications', 'unreadNotificationCount', 'projects'
+        ));
     }
 
     // MENAMBAHKAN LOGBOOK
-    public function store(Request $request)
+    public function store(Request $request, WorkflowNotifier $notifier)
     {
         $data = $request->validate([
             'tanggal' => 'required|date',
             'aktivitas' => 'required|string|max:10000',
             'foto' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'project_id' => ['nullable', 'integer', 'exists:projects,id'],
         ]);
+
+        if (! empty($data['project_id'])) {
+            abort_unless(Auth::user()->projects()->whereKey($data['project_id'])->exists(), 403, 'Anda bukan anggota proyek ini.');
+        }
+
+        if (! empty($data['project_id'])) {
+            abort_unless(Auth::user()->projects()->whereKey($data['project_id'])->exists(), 403, 'Anda bukan anggota proyek ini.');
+        }
 
         if ($request->hasFile('foto')) {
             $data['foto'] = $request->file('foto')->store('logbooks', 'public');
@@ -81,11 +129,22 @@ class LogbookController extends Controller
 
         Logbook::create([
             'user_id' => Auth::id(),
+            'project_id' => $data['project_id'] ?? null,
             'tanggal' => $data['tanggal'],
             'aktivitas' => $data['aktivitas'],
             'foto' => $data['foto'] ?? null,
             'status' => 'pending',
         ]);
+
+        $student = Auth::user()->loadMissing('guruPembimbing');
+        if ($student->guruPembimbing) {
+            $notifier->notify(
+                $student->guruPembimbing,
+                'Logbook baru',
+                $student->name.' mengirim catatan logbook baru.',
+                route('dashboard')
+            );
+        }
 
         return redirect()->route('dashboard')
             ->with('success', 'Logbook berhasil ditambahkan!');
@@ -130,7 +189,16 @@ class LogbookController extends Controller
             'tanggal' => 'required|date',
             'aktivitas' => 'required|string|max:10000',
             'foto' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'project_id' => ['nullable', 'integer', 'exists:projects,id'],
         ]);
+
+        if (! empty($data['project_id'])) {
+            abort_unless(Auth::user()->projects()->whereKey($data['project_id'])->exists(), 403, 'Anda bukan anggota proyek ini.');
+        }
+
+        if (! empty($data['project_id'])) {
+            abort_unless(Auth::user()->projects()->whereKey($data['project_id'])->exists(), 403, 'Anda bukan anggota proyek ini.');
+        }
 
         if ($request->hasFile('foto')) {
             if ($logbook->foto && Storage::disk('public')->exists($logbook->foto)) {
@@ -142,6 +210,7 @@ class LogbookController extends Controller
 
         $logbook->update([
             'tanggal' => $data['tanggal'],
+            'project_id' => $data['project_id'] ?? null,
             'aktivitas' => $data['aktivitas'],
             'foto' => $data['foto'] ?? $logbook->foto,
             'status' => 'pending',
@@ -153,7 +222,7 @@ class LogbookController extends Controller
     }
 
     // GURU / ADMIN MENYETUJUI ATAU MEMINTA REVISI
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(Request $request, $id, WorkflowNotifier $notifier)
     {
         $request->validate([
             'status' => 'required|in:disetujui,revisi',
@@ -188,6 +257,15 @@ class LogbookController extends Controller
             'status' => $request->status,
             'catatan_guru' => $request->catatan_guru,
         ]);
+
+        $notifier->notify(
+            $logbook->user,
+            $request->status === 'revisi' ? 'Logbook perlu direvisi' : 'Logbook disetujui',
+            $request->status === 'revisi'
+                ? 'Guru meminta revisi pada catatan logbook Anda.'
+                : 'Catatan logbook Anda telah disetujui.',
+            route('dashboard')
+        );
 
         return redirect()->route('dashboard')
             ->with('success', 'Status logbook berhasil diperbarui!');

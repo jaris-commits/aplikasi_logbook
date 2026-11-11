@@ -40,4 +40,8 @@ return [
         'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
     ],
 
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
+
 ];

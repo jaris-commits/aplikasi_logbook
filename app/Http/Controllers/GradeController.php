@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Grade;
 use App\Models\User;
+use App\Services\WorkflowNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class GradeController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request, WorkflowNotifier $notifier)
     {
         $user = Auth::user();
 
@@ -43,6 +44,12 @@ class GradeController extends Controller
                 'nilai' => $data['nilai'],
                 'catatan' => $data['catatan'] ?? null,
             ]
+        );
+
+        $notifier->notify($student,
+            'Nilai magang diperbarui',
+            'Guru telah memperbarui nilai magang Anda untuk semester '.$data['semester'].'.',
+            route('dashboard')
         );
 
         return redirect()->route('dashboard')->with('success', 'Nilai siswa berhasil disimpan!');

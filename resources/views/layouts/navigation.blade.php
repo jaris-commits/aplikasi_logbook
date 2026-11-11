@@ -21,6 +21,13 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @if (Auth::user()->role === 'siswa')
+                        <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">Absensi</x-nav-link>
+                    @endif
+                    @if (in_array(Auth::user()->role, ['admin', 'guru']))
+                        <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">Kelompok Proyek</x-nav-link>
+                        <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">Absensi</x-nav-link>
+                    @endif
                     @if (Auth::user()->role === 'admin')
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                             Manajemen Akun
@@ -31,6 +38,12 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+                <a href="{{ route('notifications.index') }}" class="relative mr-3 inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800" aria-label="Notifikasi">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-5-5.9V4a1 1 0 0 0-2 0v1.1A6 6 0 0 0 6 11v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0m6 0H9"/></svg>
+                    @if(Auth::user()->unreadNotifications()->count())
+                        <span class="absolute right-1 top-1 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-4 text-white">{{ Auth::user()->unreadNotifications()->count() }}</span>
+                    @endif
+                </a>
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
@@ -80,6 +93,15 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            @if (in_array(Auth::user()->role, ['admin', 'guru', 'siswa']))
+                <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">Absensi</x-responsive-nav-link>
+            @endif
+            @if (in_array(Auth::user()->role, ['admin', 'guru']))
+                <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">Kelompok Proyek</x-responsive-nav-link>
+            @endif
+            <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">
+                Notifikasi @if(Auth::user()->unreadNotifications()->count()) ({{ Auth::user()->unreadNotifications()->count() }}) @endif
             </x-responsive-nav-link>
             @if (Auth::user()->role === 'admin')
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
